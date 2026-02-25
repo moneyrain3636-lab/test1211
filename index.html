@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 문장 구조 실전 훈련소 (즉시 종료 적용)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+        
+        #set-selection { text-align: center; }
+        .set-btn {
+            background-color: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #1e40af;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .set-btn:hover { background-color: #e2e8f0; border-color: #cbd5e0; transform: translateY(-2px); }
+        .set-btn.all-btn { background-color: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .set-btn.all-btn:hover { background-color: #dbeafe; border-color: #93c5fd; }
+        
+        .set-desc { font-size: 0.8em; color: #ef4444; font-weight: bold; background-color: #fee2e2; padding: 4px 10px; border-radius: 20px;}
+        .mode-container { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; margin-bottom: 20px; }
+
+        #quiz-screen, #result-screen { display: none; }
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .question-type {
+            font-size: 1.05em;
+            color: #ffffff;
+            background-color: #3b82f6;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+        
+        .timer-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .time-text {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: #0f172a;
+            min-width: 50px;
+        }
+        .time-text.warning { color: #ea580c; }
+        .time-text.danger { color: #dc2626; animation: pulse 1s infinite; }
+        .timer-container {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            background-color: #10b981;
+            width: 100%;
+            transition: width 1s linear, background-color 0.3s;
+        }
+        .timer-bar.warning { background-color: #f59e0b; }
+        .timer-bar.danger { background-color: #ef4444; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .instruction-text {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1e293b;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .sentence-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end; 
+            gap: 12px;
+            margin-bottom: 30px;
+            padding: 25px 20px 15px 20px;
+            background-color: #f8fafc;
+            border-radius: 15px;
+            border: 2px dashed #cbd5e0;
+            min-height: 90px;
+        }
+        
+        .word-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .word-btn {
+            background-color: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .word-btn.selected {
+            background-color: #dbeafe;
+            border-color: #2563eb;
+            color: #1d4ed8;
+            transform: scale(1.05);
+            box-shadow: 0 6px 10px rgba(37, 99, 235, 0.2);
+        }
+        .word-btn:hover:not(:disabled) {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        .word-btn.correct { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; transform: scale(1); box-shadow:none; }
+        .word-btn.wrong { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; transform: scale(1); box-shadow:none; }
+        .word-btn:disabled { cursor: not-allowed; }
+
+        .word-tag {
+            font-size: 0.8em;
+            color: #94a3b8; 
+            font-weight: 700;
+            opacity: 0; 
+            transition: opacity 0.4s ease;
+            height: 1.2em; 
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .show-tags .word-tag { opacity: 1; }
+        
+        .feedback-box {
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+        .feedback-title { font-size: 1.3em; font-weight: 800; margin-bottom: 15px; }
+        .explanation-box {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            font-size: 1em;
+            text-align: left;
+        }
+        .exp-translate { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e0; }
+        .exp-wrong { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .exp-correct { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .action-btn {
+            flex: 1;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+        .action-btn.secondary { background-color: #64748b; }
+        .action-btn.secondary:hover { background-color: #475569; }
+        .action-btn.review { background-color: #ea580c; }
+        .action-btn.review:hover { background-color: #c2410c; }
+        .action-btn.danger { background-color: #ef4444; }
+        .action-btn.danger:hover { background-color: #dc2626; }
+        
+        #review-controls { display: none; flex-direction: column; gap: 10px; margin-top: 25px; }
+        #next-btn { display: none; width: 100%; margin-top: 20px; }
+
+        /* 종료 버튼: 화면 우측 하단 고정 */
+        #quit-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 1.05em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s;
+            display: none; 
+            z-index: 1000;
+        }
+        #quit-btn:hover { background-color: #dc2626; transform: translateY(-3px); }
+
+        .charts-wrapper {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 25px 0;
+            gap: 20px;
+            height: 220px;
+        }
+        .chart-box { flex: 1; height: 100%; position: relative; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @media (max-width: 600px) {
+            #quit-btn { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 0.95em; }
+            .charts-wrapper { flex-direction: column; height: 400px; }
+            .word-btn { padding: 10px 15px; font-size: 1.2em; }
+            .word-tag { font-size: 0.7em; }
+            .set-btn { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="set-selection">
+        <h1 style="color: #1e40af; margin-bottom: 5px;">통합 문장 구조 훈련소</h1>
+        <p style="color: #64748b; margin-bottom: 10px; line-height: 1.5;">
+            원하는 난이도의 훈련 세트를 선택하세요.<br>
+            (※ to부정사 보어가 정답일 경우 <b>단어 2개</b>를 모두 클릭해야 합니다.)
+        </p>
+
+        <div class="mode-container">
+            <button class="set-btn" onclick="startQuiz('123')">
+                <span>🌱 1, 2, 3형식 집중 훈련</span>
+                <span class="set-desc">기초 마스터</span>
+            </button>
+            
+            <button class="set-btn all-btn" onclick="startQuiz('all')">
+                <span>🚀 1~5형식 종합 실전 훈련</span>
+                <span class="set-desc" style="background-color:#dbeafe; color:#2563eb;">심화 마스터</span>
+            </button>
+        </div>
+        
+        <div id="review-controls">
+            <button class="action-btn review" onclick="startMainReview()">
+                📝 누적 오답 노트 풀기 (<span id="wrong-count">0</span>문제)
+            </button>
+            <button class="action-btn danger" style="padding: 12px; font-size: 1em;" onclick="resetWrongAnswers()">
+                🗑️ 오답 기록 초기화
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-screen">
+        <div class="quiz-header">
+            <span class="question-type" id="q-type">유형</span>
+            <span id="q-progress" style="font-weight: bold; color: #475569;">1 / 10</span>
+        </div>
+        
+        <div class="timer-wrapper">
+            <div class="time-text" id="time-text">15초</div>
+            <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
+        </div>
+
+        <div class="instruction-text" id="q-instruction">질문 지시문</div>
+        
+        <div class="sentence-container" id="sentence-container"></div>
+
+        <div class="feedback-box" id="feedback"></div>
+        <button class="action-btn" id="next-btn" onclick="nextQuestion()">다음 문제로 ➔</button>
+    </div>
+
+    <div id="result-screen" style="text-align: center;">
+        <h2 style="font-size: 2.2em; color: #1e40af; margin-bottom: 10px;" id="result-title">훈련 완료!</h2>
+        <p id="final-score" style="font-size: 1.4em; font-weight: bold; margin-bottom: 10px;"></p>
+        
+        <div class="charts-wrapper">
+            <div class="chart-box">
+                <canvas id="donutChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <p id="result-msg" style="color: #64748b; margin-bottom: 30px; line-height: 1.5;"></p>
+        <div class="btn-group">
+            <button class="action-btn secondary" onclick="goToMain()">메인 메뉴로</button>
+            <button class="action-btn review" id="review-btn" onclick="startReview()" style="display:none;">📝 방금 틀린 문제 복습</button>
+        </div>
+    </div>
+</div>
+
+<button id="quit-btn" onclick="quitQuiz()">종료 🚪</button>
+
+<script>
+    // 1~5형식 통합 데이터
+    const allBaseSentences = [
+        // ============================================
+        // [1, 2, 3형식 데이터] (form: "123")
+        // ============================================
+        { text: "The fire burns .", translation: "불이 타오른다.", tags: ["관사", "주어(명사)", "동사", ""], form: "123", tasks: [{ type: "동사 찾기", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "'burns'는 주어의 동작을 나타내는 동사입니다. (1형식)" }] },
+        { text: "A ghost disappeared suddenly .", translation: "유령이 갑자기 사라졌다.", tags: ["관사", "주어(명사)", "동사", "부사", ""], form: "123", tasks: [{ type: "동사 찾기", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "'disappeared'는 '사라지다'라는 의미의 1형식 동사입니다." }] },
+        { text: "The teenagers laughed loudly .", translation: "십대들이 크게 웃었다.", tags: ["관사", "주어(명사)", "동사", "부사", ""], form: "123", tasks: [{ type: "명사 찾기", target: [1], instruction: "다음 문장에서 주어 역할을 하는 <b>[명사]</b>를 찾아 누르세요.", exp: "'teenagers'는 문장의 주체가 되는 명사(주어)입니다." }] },
+        { text: "The storm arrived early .", translation: "폭풍이 일찍 도착했다.", tags: ["관사", "주어(명사)", "동사", "부사", ""], form: "123", tasks: [{ type: "부사 찾기", target: [3], instruction: "다음 문장에서 <b>[부사]</b>를 찾아 누르세요.", exp: "'early'는 도착한 시간을 설명해주는 부사입니다." }] },
+        { text: "They move to the park .", translation: "그들은 공원으로 이동한다.", tags: ["주어(대명사)", "동사", "전치사", "관사", "명사", ""], form: "123", tasks: [{ type: "전치사 찾기", target: [2], instruction: "다음 문장에서 방향을 나타내는 <b>[전치사]</b>를 찾아 누르세요.", exp: "'to'는 뒤에 명사(park)를 이끄는 전치사입니다." }] },
+        { text: "We walk in the forest .", translation: "우리는 숲 속을 걷는다.", tags: ["주어(대명사)", "동사", "전치사", "관사", "명사", ""], form: "123", tasks: [{ type: "명사 찾기", target: [4], instruction: "다음 문장에서 전치사의 목적어로 쓰인 <b>[명사]</b>를 찾아 누르세요.", exp: "'forest'는 숲을 의미하는 명사입니다." }] },
+        { text: "The kid cried .", translation: "그 아이가 울었다.", tags: ["관사", "주어(명사)", "동사", ""], form: "123", tasks: [{ type: "주어 찾기", target: [1], instruction: "다음 문장에서 <b>[주어]</b>를 찾아 누르세요.", exp: "'kid'는 문장의 동작을 수행하는 주어입니다." }] },
+        { text: "The movie is fun .", translation: "그 영화는 재미있다.", tags: ["관사", "주어(명사)", "동사", "보어(형용사)", ""], form: "123", tasks: [{ type: "보어 찾기", target: [3], instruction: "다음 문장에서 주어의 상태를 설명하는 <b>[보어]</b>를 찾아 누르세요.", exp: "'fun'은 주어(movie)를 보충 설명하는 형용사 보어입니다. (2형식)" }] },
+        { text: "The trip was safe .", translation: "그 여행은 안전했다.", tags: ["관사", "주어(명사)", "동사", "보어(형용사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [3], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'safe'는 안전한 상태를 나타내는 형용사입니다." }] },
+        { text: "The recipe seems simple .", translation: "그 레시피는 간단해 보인다.", tags: ["관사", "주어(명사)", "동사", "보어(형용사)", ""], form: "123", tasks: [{ type: "보어 찾기", target: [3], instruction: "다음 문장에서 <b>[보어]</b>를 찾아 누르세요.", exp: "동사 seems 뒤에서 주어를 설명하는 'simple'이 보어입니다." }] },
+        { text: "The story became famous .", translation: "그 이야기는 유명해졌다.", tags: ["관사", "주어(명사)", "동사", "보어(형용사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [3], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'famous'는 명사의 상태를 나타내는 형용사입니다." }] },
+        { text: "She is a guide .", translation: "그녀는 가이드이다.", tags: ["주어(대명사)", "동사", "관사", "보어(명사)", ""], form: "123", tasks: [{ type: "명사 찾기", target: [3], instruction: "다음 문장에서 보어로 쓰인 <b>[명사]</b>를 찾아 누르세요.", exp: "'guide'는 주어(She)의 직업을 나타내는 명사 보어입니다." }] },
+        { text: "The room smells bad .", translation: "방에서 나쁜 냄새가 난다.", tags: ["관사", "주어(명사)", "동사", "보어(형용사)", ""], form: "123", tasks: [{ type: "보어 찾기", target: [3], instruction: "다음 문장에서 <b>[보어]</b>를 찾아 누르세요.", exp: "감각동사 smell 뒤에 온 'bad'가 형용사 보어입니다." }] },
+        { text: "He became a soldier .", translation: "그는 군인이 되었다.", tags: ["주어(대명사)", "동사", "관사", "보어(명사)", ""], form: "123", tasks: [{ type: "대명사 찾기", target: [0], instruction: "다음 문장에서 품사가 <b>[대명사]</b>인 단어를 누르세요.", exp: "'He'는 남자를 대신 부르는 대명사입니다." }] },
+        { text: "We protect the earth .", translation: "우리는 지구를 보호한다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [3], instruction: "다음 문장에서 동사의 대상이 되는 <b>[목적어]</b>를 찾아 누르세요.", exp: "'earth'는 동사 protect(~을 보호하다)의 목적어입니다. (3형식)" }] },
+        { text: "The kid threw the toy .", translation: "아이가 장난감을 던졌다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [4], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "'toy'는 동사 threw(던졌다)의 대상이 되는 목적어입니다." }] },
+        { text: "The army built a bridge .", translation: "군대가 다리를 건설했다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "동사 찾기", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "'built'는 '건설하다(build)'의 과거형 동사입니다." }] },
+        { text: "She found a pretty island .", translation: "그녀는 예쁜 섬을 발견했다.", tags: ["주어(대명사)", "동사", "관사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [3], instruction: "다음 문장에서 명사를 꾸미는 <b>[형용사]</b>를 찾아 누르세요.", exp: "'pretty'는 명사 island를 꾸며주는 형용사입니다." }] },
+        { text: "He usually wears casual clothes .", translation: "그는 평소에 캐주얼한 옷을 입는다.", tags: ["주어(대명사)", "부사", "동사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "부사 찾기", target: [1], instruction: "다음 문장에서 빈도를 나타내는 <b>[부사]</b>를 찾아 누르세요.", exp: "'usually'는 '보통, 대개'를 뜻하는 부사입니다." }] },
+        { text: "I respect the president .", translation: "나는 대통령을 존경한다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "대명사 찾기", target: [0], instruction: "다음 문장에서 품사가 <b>[대명사]</b>인 단어를 누르세요.", exp: "'I'는 나를 지칭하는 대명사입니다." }] },
+        { text: "The scientist discovered a new planet .", translation: "그 과학자는 새로운 행성을 발견했다.", tags: ["관사", "주어(명사)", "동사", "관사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "주어 찾기", target: [1], instruction: "다음 문장에서 <b>[주어]</b>를 찾아 누르세요.", exp: "'scientist'는 이 문장에서 행동을 하는 주체(주어)입니다." }] },
+        { text: "We need fresh vegetables .", translation: "우리는 신선한 채소가 필요하다.", tags: ["주어(대명사)", "동사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [2], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'fresh'는 채소(vegetables)의 상태를 설명하는 형용사입니다." }] },
+        { text: "They share the secret .", translation: "그들은 비밀을 공유한다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "명사 찾기", target: [3], instruction: "다음 문장에서 목적어로 쓰인 <b>[명사]</b>를 찾아 누르세요.", exp: "'secret'은 비밀이라는 뜻의 명사입니다." }] },
+        { text: "The clerk sold the medicine .", translation: "점원이 약을 팔았다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "동사 찾기", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "'sold'는 팔다(sell)의 과거형 동사입니다." }] },
+        { text: "She enjoys the magic .", translation: "그녀는 마술을 즐긴다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "동사 enjoys(~을 즐기다)의 대상인 'magic'이 목적어입니다." }] },
+        { text: "He clearly explained the fact .", translation: "그는 그 사실을 명확하게 설명했다.", tags: ["주어(대명사)", "부사", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "부사 찾기", target: [1], instruction: "다음 문장에서 동사를 꾸며주는 <b>[부사]</b>를 찾아 누르세요.", exp: "'clearly(명확하게)'는 동사 explained를 수식하는 부사입니다." }] },
+        { text: "The tourist visited the museum .", translation: "그 관광객은 박물관을 방문했다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "명사 찾기", target: [1], instruction: "다음 문장에서 주어로 쓰인 <b>[명사]</b>를 찾아 누르세요.", exp: "'tourist'는 관광객이라는 의미의 명사입니다." }] },
+        { text: "We protect wild animals .", translation: "우리는 야생 동물을 보호한다.", tags: ["주어(대명사)", "동사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [2], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'wild'는 동물을 꾸며주는 형용사입니다." }] },
+        { text: "She sent a letter to me .", translation: "그녀는 나에게 편지를 보냈다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", "전치사", "대명사", ""], form: "123", tasks: [{ type: "전치사 찾기", target: [4], instruction: "다음 문장에서 방향을 나타내는 <b>[전치사]</b>를 찾아 누르세요.", exp: "'to'는 '~에게'라는 방향을 나타내는 전치사입니다." }] },
+        { text: "They raised a huge flag .", translation: "그들은 거대한 깃발을 올렸다.", tags: ["주어(대명사)", "동사", "관사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [4], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "'flag'는 올리다(raised)의 대상이 되는 목적어입니다." }] },
+        { text: "The smart kid solved the riddle .", translation: "그 똑똑한 아이가 수수께끼를 풀었다.", tags: ["관사", "형용사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "주어 찾기", target: [2], instruction: "다음 문장의 핵심 <b>[주어]</b> 단어를 찾아 누르세요.", exp: "문장의 진짜 행동 주체는 'kid(아이)'입니다." }] },
+        { text: "We learn science at school .", translation: "우리는 학교에서 과학을 배운다.", tags: ["주어(대명사)", "동사", "목적어(명사)", "전치사", "명사", ""], form: "123", tasks: [{ type: "전치사 찾기", target: [3], instruction: "다음 문장에서 장소를 나타내는 <b>[전치사]</b>를 찾아 누르세요.", exp: "'at'은 장소를 나타내는 전치사입니다." }] },
+        { text: "He suddenly closed the door .", translation: "그가 갑자기 문을 닫았다.", tags: ["주어(대명사)", "부사", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "부사 찾기", target: [1], instruction: "다음 문장에서 품사가 <b>[부사]</b>인 단어를 누르세요.", exp: "'suddenly'는 '갑자기'라는 뜻을 가진 부사입니다." }] },
+        { text: "The neighbor brought a delicious dish .", translation: "이웃이 맛있는 요리를 가져왔다.", tags: ["관사", "주어(명사)", "동사", "관사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [4], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'delicious'는 요리(dish)를 꾸며주는 형용사입니다." }] },
+        { text: "I forgot the password .", translation: "나는 비밀번호를 잊어버렸다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "대명사 찾기", target: [0], instruction: "다음 문장에서 품사가 <b>[대명사]</b>인 단어를 누르세요.", exp: "'I'는 나를 지칭하는 대명사입니다." }] },
+        { text: "The teacher controls the class .", translation: "선생님이 수업을 통제한다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "동사 찾기", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "'controls'는 통제하다라는 의미의 동사입니다." }] },
+        { text: "We recycle the trash .", translation: "우리는 쓰레기를 재활용한다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "동사 recycle(~을 재활용하다)의 대상인 'trash'가 목적어입니다." }] },
+        { text: "The author wrote a perfect poem .", translation: "그 작가는 완벽한 시를 썼다.", tags: ["관사", "주어(명사)", "동사", "관사", "형용사", "목적어(명사)", ""], form: "123", tasks: [{ type: "형용사 찾기", target: [4], instruction: "다음 문장에서 품사가 <b>[형용사]</b>인 단어를 누르세요.", exp: "'perfect'는 시(poem)를 수식하는 형용사입니다." }] },
+        { text: "She respects the law .", translation: "그녀는 법을 존경(준수)한다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "명사 찾기", target: [3], instruction: "다음 문장에서 목적어로 쓰인 <b>[명사]</b>를 찾아 누르세요.", exp: "'law'는 법이라는 뜻의 명사입니다." }] },
+        { text: "He won the prize .", translation: "그는 상을 받았다(이겼다).", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", ""], form: "123", tasks: [{ type: "목적어 찾기", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "동사 won(~을 획득하다)의 대상인 'prize'가 목적어입니다." }] },
+
+        // ============================================
+        // [4, 5형식 데이터] (form: "45")
+        // ============================================
+        { 
+            text: "My parents bought me a new smartphone .", translation: "부모님은 나에게 새 스마트폰을 사주셨다.", tags: ["소유격", "주어(명사)", "동사", "간접목적어(대명사)", "관사", "형용사", "직접목적어(명사)", ""], form: "45",
+            tasks: [
+                { type: "간접목적어", target: [3], instruction: "다음 문장에서 <b>[간접목적어]</b>를 찾아 누르세요.", exp: "수여동사 뒤 '~에게'에 해당하는 'me'가 간접목적어입니다." },
+                { type: "직접목적어", target: [6], instruction: "다음 문장에서 <b>[직접목적어]</b>를 찾아 누르세요.", exp: "수여동사 뒤 '~을/를'에 해당하는 'smartphone'이 직접목적어입니다." },
+                { type: "동사", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "주어의 동작을 나타내는 'bought'가 4형식 수여동사입니다." }
+            ]
+        },
+        { 
+            text: "The kind man gave us some water .", translation: "그 친절한 남자는 우리에게 약간의 물을 주었다.", tags: ["관사", "형용사", "주어(명사)", "동사", "간접목적어(대명사)", "형용사", "직접목적어(명사)", ""], form: "45",
+            tasks: [
+                { type: "간접목적어", target: [4], instruction: "다음 문장에서 <b>[간접목적어]</b>를 찾아 누르세요.", exp: "수여동사(gave) 뒤 '~에게' 해당하는 'us'가 간접목적어입니다." },
+                { type: "직접목적어", target: [6], instruction: "다음 문장에서 <b>[직접목적어]</b>를 찾아 누르세요.", exp: "수여동사 뒤 '~을/를' 해당하는 'water'가 직접목적어입니다." }
+            ]
+        },
+        { 
+            text: "She showed him the secret map .", translation: "그녀는 그에게 비밀 지도를 보여주었다.", tags: ["주어(대명사)", "동사", "간접목적어(대명사)", "관사", "형용사", "직접목적어(명사)", ""], form: "45",
+            tasks: [
+                { type: "간접목적어", target: [2], instruction: "다음 문장에서 <b>[간접목적어]</b>를 찾아 누르세요.", exp: "showed(보여주었다)의 대상 'him'이 간접목적어입니다." },
+                { type: "직접목적어", target: [5], instruction: "다음 문장에서 <b>[직접목적어]</b>를 찾아 누르세요.", exp: "보여준 사물인 'map'이 직접목적어입니다." }
+            ]
+        },
+        { 
+            text: "They named their baby hero .", translation: "그들은 그들의 아기를 영웅이라고 이름 지었다.", tags: ["주어(대명사)", "동사", "소유격", "목적어(명사)", "목적격보어(명사)", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "목적어(baby)의 신분을 나타내는 'hero'가 명사 목적격보어입니다." },
+                { type: "목적어", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "동사 named의 대상이 되는 'baby'가 목적어입니다." }
+            ]
+        },
+        { 
+            text: "People call the old man a walking dictionary .", translation: "사람들은 그 노인을 걸어 다니는 사전이라고 부른다.", tags: ["주어(명사)", "동사", "관사", "형용사", "목적어(명사)", "관사", "형용사", "목적격보어(명사)", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [7], instruction: "다음 문장에서 <b>[목적격보어]</b>의 핵심 단어를 찾아 누르세요.", exp: "call의 목적어(man)를 지칭하는 명사 보어 'dictionary'입니다." },
+                { type: "동사", target: [1], instruction: "다음 문장에서 5형식 <b>[동사]</b>를 찾아 누르세요.", exp: "'~를 ~라고 부르다'라는 의미의 5형식 동사 'call'입니다." }
+            ]
+        },
+        { 
+            text: "The success made him proud .", translation: "그 성공은 그를 자랑스럽게 만들었다.", tags: ["관사", "주어(명사)", "동사", "목적어(대명사)", "목적격보어(형용사)", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "목적어(him)의 상태를 설명하는 'proud'가 형용사 목적격보어입니다." },
+                { type: "목적어", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "동사 made의 대상이 되는 'him'이 목적어입니다." }
+            ]
+        },
+        { 
+            text: "The heavy snow kept us warm .", translation: "폭설에도 우리는 따뜻하게 유지되었다.", tags: ["관사", "형용사", "주어(명사)", "동사", "목적어(대명사)", "목적격보어(형용사)", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [5], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "keep + 목적어 + 형용사 구조에서 'warm'이 목적격보어입니다." },
+                { type: "목적어", target: [4], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "따뜻하게 유지된 대상인 'us'가 목적어입니다." }
+            ]
+        },
+        { 
+            text: "I want you to finish the work .", translation: "나는 네가 그 일을 끝내기를 원한다.", tags: ["주어(대명사)", "동사", "목적어(대명사)", "목적격보어(to부정사)", "목적격보어(동사원형)", "관사", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [3, 4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 나타내는 <b><span style='color:#ef4444;'>2개의 단어</span></b>를 모두 누르세요.", exp: "want는 목적격보어로 to부정사를 취하므로 'to'와 'finish'가 정답입니다." },
+                { type: "목적어", target: [2], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "행동(finish)의 주체가 되는 목적어 'you'입니다." }
+            ]
+        },
+        { 
+            text: "The teacher allowed us to play outside .", translation: "선생님은 우리가 밖에서 노는 것을 허락하셨다.", tags: ["관사", "주어(명사)", "동사", "목적어(대명사)", "목적격보어(to부정사)", "목적격보어(동사원형)", "부사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4, 5], instruction: "다음 문장에서 <b>[목적격보어]</b>를 나타내는 <b><span style='color:#ef4444;'>2개의 단어</span></b>를 모두 누르세요.", exp: "allow는 목적격보어로 to부정사를 취하므로 'to'와 'play'가 정답입니다." },
+                { type: "동사", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "허락하다는 의미의 'allowed'가 동사입니다." }
+            ]
+        },
+        { 
+            text: "He advised me to read the book .", translation: "그는 나에게 그 책을 읽으라고 조언했다.", tags: ["주어(대명사)", "동사", "목적어(대명사)", "목적격보어(to부정사)", "목적격보어(동사원형)", "관사", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [3, 4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 나타내는 <b><span style='color:#ef4444;'>2개의 단어</span></b>를 모두 누르세요.", exp: "advise는 목적격보어로 to부정사를 취하므로 'to'와 'read'가 정답입니다." }
+            ]
+        },
+        { 
+            text: "My friend asked me to join the club .", translation: "내 친구는 나에게 동아리에 가입해달라고 부탁했다.", tags: ["소유격", "주어(명사)", "동사", "목적어(대명사)", "목적격보어(to부정사)", "목적격보어(동사원형)", "관사", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4, 5], instruction: "다음 문장에서 <b>[목적격보어]</b>를 나타내는 <b><span style='color:#ef4444;'>2개의 단어</span></b>를 모두 누르세요.", exp: "ask는 5형식에서 목적격보어로 to부정사를 취하므로 'to', 'join'이 정답입니다." }
+            ]
+        },
+        { 
+            text: "My mother let me watch TV .", translation: "나의 어머니는 내가 TV 보는 것을 허락하셨다.", tags: ["소유격", "주어(명사)", "동사", "목적어(대명사)", "목적격보어(동사원형)", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "사역동사 let은 능동 관계일 때 목적격보어로 동사원형(watch)을 취합니다." },
+                { type: "동사", target: [2], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "허락의 의미를 가진 사역동사 'let'입니다." }
+            ]
+        },
+        { 
+            text: "I had the mechanic repair my car .", translation: "나는 정비사에게 내 차를 수리하게 했다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", "목적격보어(동사원형)", "소유격", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "사역동사 have 능동태에서는 동사원형(repair)이 목적격보어로 옵니다." }
+            ]
+        },
+        { 
+            text: "The teacher helped the students solve the problem .", translation: "선생님은 학생들이 문제를 푸는 것을 도왔다.", tags: ["관사", "주어(명사)", "동사", "관사", "목적어(명사)", "목적격보어(동사원형)", "관사", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [5], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "준사역동사 help는 능동일 때 목적격보어로 동사원형(solve)을 취할 수 있습니다." }
+            ]
+        },
+        { 
+            text: "She made her son clean his room .", translation: "그녀는 아들에게 그의 방을 청소하게 시켰다.", tags: ["주어(대명사)", "동사", "소유격", "목적어(명사)", "목적격보어(동사원형)", "소유격", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "사역동사 make 능동태에서 목적격보어는 동사원형(clean)입니다." },
+                { type: "목적어", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "청소를 하는 주체인 'son'이 목적어입니다." }
+            ]
+        },
+        { 
+            text: "She saw a boy jumping over the fence .", translation: "그녀는 한 소년이 울타리를 넘어 뛰는 것을 보았다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", "목적격보어(Ving)", "전치사", "관사", "명사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "지각동사 see는 진행을 강조할 때 목적격보어로 현재분사(Ving)를 취합니다." },
+                { type: "동사", target: [1], instruction: "다음 문장에서 <b>[동사]</b>를 찾아 누르세요.", exp: "감각을 나타내는 지각동사 'saw'입니다." }
+            ]
+        },
+        { 
+            text: "We heard the dog barking loudly .", translation: "우리는 개가 크게 짖는 것을 들었다.", tags: ["주어(대명사)", "동사", "관사", "목적어(명사)", "목적격보어(Ving)", "부사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "지각동사 hear 뒤에 개가 짖고 있는 능동/진행 상태이므로 Ving(barking)가 옵니다." }
+            ]
+        },
+        { 
+            text: "He felt his heart beating fast .", translation: "그는 그의 심장이 빠르게 뛰는 것을 느꼈다.", tags: ["주어(대명사)", "동사", "소유격", "목적어(명사)", "목적격보어(Ving)", "부사", ""], form: "45",
+            tasks: [
+                { type: "목적격보어", target: [4], instruction: "다음 문장에서 <b>[목적격보어]</b>를 찾아 누르세요.", exp: "지각동사 feel 뒤에 진행을 나타내는 현재분사(beating)가 옵니다." },
+                { type: "목적어", target: [3], instruction: "다음 문장에서 <b>[목적어]</b>를 찾아 누르세요.", exp: "뛰고 있는 주체인 'heart'가 목적어입니다." }
+            ]
+        }
+    ];
+
+    let expandedPool = [];
+    let currentMode = 'all'; // '123' 또는 'all'
+    const QUESTIONS_PER_ROUND = 10; 
+
+    let currentQuestions = [];
+    let currentQIndex = 0;
+    let score = 0;
+    
+    let sessionWrongAnswers = []; 
+    let globalWrongAnswers = [];  
+    let selectedIndices = []; 
+
+    let timerInterval;
+    let timeLeft = 15;
+    const TIME_LIMIT = 15;
+    let isReviewMode = false;
+
+    let donutChartInst = null;
+    let barChartInst = null;
+
+    const setSelectionEl = document.getElementById('set-selection');
+    const quizScreenEl = document.getElementById('quiz-screen');
+    const resultScreenEl = document.getElementById('result-screen');
+    const qTypeEl = document.getElementById('q-type');
+    const qProgressEl = document.getElementById('q-progress');
+    const qInstructionEl = document.getElementById('q-instruction');
+    const sentenceContainer = document.getElementById('sentence-container');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const timerBar = document.getElementById('timer-bar');
+    const timeTextEl = document.getElementById('time-text');
+    const quitBtnEl = document.getElementById('quit-btn');
+
+    function getSignificantWords(text) {
+        const stopWords = ['the', 'a', 'an', 'is', 'are', 'am', 'was', 'were', 'to', 'in', 'at', 'on', 'of', 'for', 'with', 'and', 'but', 'or', 'so', 'it', 'this', 'that', 'they', 'we', 'he', 'she', 'i', 'you', 'my', 'your', 'his', 'her', 'their', 'our', 'me', 'him', 'them', 'us', 'be', 'been', 'being', 'do', 'did', 'does', 'has', 'have', 'had'];
+        let cleanText = text.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        let words = cleanText.split(/\s+/);
+        return words.filter(w => w.length > 0 && !stopWords.includes(w));
+    }
+
+    function shuffleArray(array) {
+        let shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function generateUniqueSet(pool, size) {
+        let shuffled = shuffleArray(pool);
+        let selected = [];
+        let usedWords = new Set();
+        let usedQuestions = new Set();
+
+        for (let q of shuffled) {
+            if (usedQuestions.has(q.text)) continue; 
+            let sigWords = getSignificantWords(q.text);
+            let hasOverlap = sigWords.some(w => usedWords.has(w)); 
+
+            if (!hasOverlap) {
+                selected.push(q);
+                usedQuestions.add(q.text);
+                sigWords.forEach(w => usedWords.add(w)); 
+            }
+            if (selected.length === size) break;
+        }
+
+        if (selected.length < size) {
+            for (let q of shuffled) {
+                if (!usedQuestions.has(q.text)) {
+                    selected.push(q);
+                    usedQuestions.add(q.text);
+                    if (selected.length === size) break;
+                }
+            }
+        }
+        return selected;
+    }
+
+    function updateMainReviewBtn() {
+        const reviewControls = document.getElementById('review-controls');
+        const countSpan = document.getElementById('wrong-count');
+        if (globalWrongAnswers.length > 0) {
+            reviewControls.style.display = 'flex';
+            countSpan.innerText = globalWrongAnswers.length;
+        } else {
+            reviewControls.style.display = 'none';
+        }
+    }
+
+    function resetWrongAnswers() {
+        if (confirm("누적된 오답 기록을 모두 지우시겠습니까?")) {
+            globalWrongAnswers = [];
+            updateMainReviewBtn();
+            alert("오답 기록이 완전히 초기화되었습니다!");
+        }
+    }
+
+    // 모드에 맞춰 풀 구성
+    function buildPool(mode) {
+        let filteredBase = allBaseSentences.filter(s => mode === 'all' || s.form === mode);
+        let flattenedQuestions = [];
+        filteredBase.forEach(sentence => {
+            sentence.tasks.forEach(task => {
+                flattenedQuestions.push({
+                    text: sentence.text,
+                    translation: sentence.translation,
+                    tags: sentence.tags,
+                    type: task.type,
+                    target: task.target,
+                    instruction: task.instruction,
+                    exp: task.exp
+                });
+            });
+        });
+
+        let pool = [];
+        while (pool.length < 500) {
+            pool = pool.concat(flattenedQuestions);
+        }
+        return pool.slice(0, 500);
+    }
+
+    function startQuiz(mode) {
+        currentMode = mode;
+        expandedPool = buildPool(mode);
+        currentQuestions = generateUniqueSet(expandedPool, QUESTIONS_PER_ROUND);
+        isReviewMode = false;
+        resetQuizState();
+        setSelectionEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    function startMainReview() {
+        if (globalWrongAnswers.length === 0) return;
+        currentQuestions = shuffleArray([...globalWrongAnswers]);
+        isReviewMode = true;
+        resetQuizState();
+        setSelectionEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    function startReview() {
+        currentQuestions = [...sessionWrongAnswers];
+        isReviewMode = true;
+        resetQuizState();
+        resultScreenEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    // ★ 종료버튼 클릭 시 확인 창 없이 바로 메인화면으로 복귀
+    function quitQuiz() {
+        clearInterval(timerInterval);
+        goToMain();
+    }
+
+    function resetQuizState() {
+        currentQIndex = 0;
+        score = 0;
+        sessionWrongAnswers = [];
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        sentenceContainer.innerHTML = ''; 
+        sentenceContainer.classList.remove('show-tags'); 
+        selectedIndices = []; 
+        
+        const currentQ = currentQuestions[currentQIndex];
+        qTypeEl.textContent = isReviewMode ? `[오답복습] ${currentQ.type}` : `${currentQ.type}`;
+        qProgressEl.textContent = `${currentQIndex + 1} / ${currentQuestions.length}`;
+        qInstructionEl.innerHTML = currentQ.instruction;
+
+        const words = currentQ.text.split(" ");
+        let skipUntil = -1;
+
+        words.forEach((word, index) => {
+            if (word.trim() === "") return;
+            if (index <= skipUntil) return;
+
+            if (currentQ.tags[index] === "목적격보어(to부정사)" && currentQ.tags[index + 1] === "목적격보어(동사원형)") {
+                const groupWrapper = document.createElement('div');
+                groupWrapper.className = 'word-wrapper';
+
+                const btnContainer = document.createElement('div');
+                btnContainer.style.display = 'flex';
+                btnContainer.style.gap = '12px';
+
+                const btn1 = document.createElement('button');
+                btn1.className = 'word-btn';
+                btn1.innerText = words[index];
+                btn1.onclick = () => toggleWord(index, btn1, currentQ, words);
+                btnContainer.appendChild(btn1);
+
+                const btn2 = document.createElement('button');
+                btn2.className = 'word-btn';
+                btn2.innerText = words[index + 1];
+                btn2.onclick = () => toggleWord(index + 1, btn2, currentQ, words);
+                btnContainer.appendChild(btn2);
+
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'word-tag';
+                tagSpan.innerText = "목적격보어(to 부정사)"; 
+
+                groupWrapper.appendChild(btnContainer);
+                groupWrapper.appendChild(tagSpan);
+                sentenceContainer.appendChild(groupWrapper);
+
+                skipUntil = index + 1; 
+                return;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'word-wrapper';
+
+            const btn = document.createElement('button');
+            btn.className = 'word-btn';
+            
+            if (word === '.') {
+                btn.innerText = word;
+                btn.disabled = true;
+                btn.style.border = 'none';
+                btn.style.background = 'transparent';
+                btn.style.boxShadow = 'none';
+                btn.style.cursor = 'default';
+                btn.style.padding = '12px 0px';
+            } else {
+                btn.innerText = word;
+                btn.onclick = () => toggleWord(index, btn, currentQ, words);
+            }
+
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'word-tag';
+            tagSpan.innerText = currentQ.tags[index] || "";
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(tagSpan);
+            sentenceContainer.appendChild(wrapper);
+        });
+
+        startTimer();
+    }
+
+    function startTimer() {
+        timeLeft = TIME_LIMIT;
+        updateTimerUI();
+        timerBar.classList.remove('warning', 'danger');
+        timeTextEl.classList.remove('warning', 'danger');
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerUI();
+
+            if (timeLeft <= 5 && timeLeft > 2) {
+                timerBar.classList.add('warning');
+                timeTextEl.classList.add('warning');
+            } else if (timeLeft <= 2) {
+                timerBar.classList.remove('warning');
+                timeTextEl.classList.remove('warning');
+                timerBar.classList.add('danger');
+                timeTextEl.classList.add('danger');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timeOut();
+            }
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        timeTextEl.innerText = `${timeLeft}초`;
+        timerBar.style.width = `${(timeLeft / TIME_LIMIT) * 100}%`;
+    }
+
+    function disableAllWords() {
+        const allBtns = document.querySelectorAll('.word-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+        return allBtns;
+    }
+
+    function toggleWord(index, btn, currentQ, wordsArray) {
+        if (btn.classList.contains('selected')) {
+            btn.classList.remove('selected');
+            selectedIndices = selectedIndices.filter(i => i !== index);
+        } else {
+            btn.classList.add('selected');
+            selectedIndices.push(index);
+        }
+
+        if (selectedIndices.length === currentQ.target.length) {
+            checkAnswer(currentQ, wordsArray);
+        }
+    }
+
+    function timeOut() {
+        const currentQ = currentQuestions[currentQIndex];
+        const allBtns = disableAllWords();
+        
+        sentenceContainer.classList.add('show-tags');
+
+        currentQ.target.forEach(idx => {
+            if(allBtns[idx]) allBtns[idx].classList.add('correct');
+        });
+
+        let targetWordsStr = currentQ.target.map(idx => allBtns[idx]?.innerText || "").join(" + ");
+
+        sessionWrongAnswers.push(currentQ);
+        if (!globalWrongAnswers.some(q => q.text === currentQ.text && q.instruction === currentQ.instruction)) {
+            globalWrongAnswers.push(currentQ);
+        }
+
+        feedbackEl.innerHTML = `
+            <div class="feedback-title" style="color: #b91c1c;">⏰ 시간 초과!</div>
+            <div class="explanation-box exp-translate">
+                <strong>[문장 해석]</strong><br> ${currentQ.translation}
+            </div>
+            <div class="explanation-box exp-correct">
+                <strong>[정답: ${targetWordsStr}]</strong><br> ${currentQ.exp}
+            </div>
+        `;
+        feedbackEl.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function checkAnswer(currentQ, wordsArray) {
+        clearInterval(timerInterval);
+        const allBtns = disableAllWords();
+        sentenceContainer.classList.add('show-tags');
+
+        let sortedSelected = selectedIndices.slice().sort().join(',');
+        let sortedTarget = currentQ.target.slice().sort().join(',');
+        let isCorrect = (sortedSelected === sortedTarget);
+
+        let targetWordsStr = currentQ.target.map(idx => wordsArray[idx]).join(" + ");
+
+        if (isCorrect) {
+            selectedIndices.forEach(idx => {
+                if(allBtns[idx]) {
+                    allBtns[idx].classList.remove('selected');
+                    allBtns[idx].classList.add('correct');
+                }
+            });
+            score++;
+
+            globalWrongAnswers = globalWrongAnswers.filter(q => !(q.text === currentQ.text && q.instruction === currentQ.instruction));
+
+            feedbackEl.innerHTML = `
+                <div class="feedback-title" style="color: #15803d;">✅ 정답입니다!</div>
+                <div class="explanation-box exp-translate">
+                    <strong>[문장 해석]</strong><br> ${currentQ.translation}
+                </div>
+                <div class="explanation-box exp-correct">
+                    <strong>[해설]</strong><br> ${currentQ.exp}
+                </div>
+            `;
+        } else {
+            selectedIndices.forEach(idx => {
+                if(allBtns[idx]) {
+                    allBtns[idx].classList.remove('selected');
+                    allBtns[idx].classList.add('wrong');
+                }
+            });
+            currentQ.target.forEach(idx => {
+                if(allBtns[idx]) allBtns[idx].classList.add('correct');
+            });
+            
+            sessionWrongAnswers.push(currentQ);
+            if (!globalWrongAnswers.some(q => q.text === currentQ.text && q.instruction === currentQ.instruction)) {
+                globalWrongAnswers.push(currentQ);
+            }
+
+            feedbackEl.innerHTML = `
+                <div class="feedback-title" style="color: #b91c1c;">❌ 오답입니다.</div>
+                <div class="explanation-box exp-translate">
+                    <strong>[문장 해석]</strong><br> ${currentQ.translation}
+                </div>
+                <div class="explanation-box exp-correct">
+                    <strong>[진짜 정답: ${targetWordsStr}]</strong><br> ${currentQ.exp}
+                </div>
+            `;
+        }
+        feedbackEl.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentQIndex++;
+        if (currentQIndex < currentQuestions.length) loadQuestion();
+        else showResult();
+    }
+
+    function renderCharts(correctCount, wrongCount) {
+        const donutCtx = document.getElementById('donutChart').getContext('2d');
+        const barCtx = document.getElementById('barChart').getContext('2d');
+
+        if (donutChartInst) donutChartInst.destroy();
+        if (barChartInst) barChartInst.destroy();
+
+        donutChartInst = new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['정답', '오답'],
+                datasets: [{
+                    data: [correctCount, wrongCount],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: '정답 비율 (도넛 차트)' }
+                }
+            }
+        });
+
+        barChartInst = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['결과 통계'],
+                datasets: [
+                    {
+                        label: '정답 수',
+                        data: [correctCount],
+                        backgroundColor: '#10b981',
+                        borderRadius: 5
+                    },
+                    {
+                        label: '오답 수',
+                        data: [wrongCount],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: '정답 수치 (막대 차트)' }
+                }
+            }
+        });
+    }
+
+    function showResult() {
+        quizScreenEl.style.display = 'none';
+        quitBtnEl.style.display = 'none'; 
+        resultScreenEl.style.display = 'block';
+        
+        document.getElementById('final-score').innerText = `총 ${currentQuestions.length}문제 중 ${score}문제 정답!`;
+        const msgEl = document.getElementById('result-msg');
+        const reviewBtn = document.getElementById('review-btn');
+        
+        renderCharts(score, sessionWrongAnswers.length);
+
+        if (score === currentQuestions.length) {
+            document.getElementById('result-title').innerText = "🎉 완벽합니다!";
+            msgEl.innerText = "단어의 품사와 문장 성분 구조를 완벽하게 파악하셨네요! 훌륭합니다.";
+            reviewBtn.style.display = 'none';
+        } else {
+            document.getElementById('result-title').innerText = "훈련 완료";
+            msgEl.innerText = `${sessionWrongAnswers.length}문제를 헷갈리셨네요. 오답 노트를 통해 꽉 잡아보세요.`;
+            reviewBtn.style.display = 'block';
+        }
+    }
+
+    function goToMain() {
+        resultScreenEl.style.display = 'none';
+        quizScreenEl.style.display = 'none';
+        quitBtnEl.style.display = 'none'; 
+        setSelectionEl.style.display = 'block';
+        updateMainReviewBtn(); 
+    }
+
+    window.onload = updateMainReviewBtn;
+</script>
+
+</body>
+</html>
